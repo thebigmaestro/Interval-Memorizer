@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interval Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h1 { font-size: 24px; }
+    button { padding: 10px 14px; margin: 6px; font-size: 16px; }
+    .choices { margin-top: 15px; }
+    .correct { color: green; }
+    .wrong { color: red; }
+  </style>
+</head>
+<body>
+
+<h1>Interval Trainer</h1>
+
+<select id="mode">
+  <option value="1">Mode 1: Root + Interval → Note</option>
+  <option value="2">Mode 2: Note + Interval → Root</option>
+  <option value="3">Mode 3: Root + Note → Interval</option>
+</select>
+
+<div id="question" style="margin-top:20px; font-size: 20px;"></div>
+<div class="choices" id="choices"></div>
+<div id="feedback" style="margin-top: 20px; font-size: 18px;"></div>
+
+<script>
+const enharmonicMap = {
+  0: ['C'],
+  1: ['C#', 'Db'],
+  2: ['D'],
+  3: ['D#', 'Eb'],
+  4: ['E'],
+  5: ['F'],
+  6: ['F#', 'Gb'],
+  7: ['G'],
+  8: ['G#', 'Ab'],
+  9: ['A'],
+  10: ['A#', 'Bb'],
+  11: ['B']
+};
+
+const intervalMap = {
+  'b9': 1, '9': 2, '#9': 3, 'm3': 3, 'M3': 4,
+  'P4': 5, '11': 5, '#11': 6, 'tt': 6,
+  'P5': 7, 'b13': 8, 'm6': 8, '13': 9, 'M6': 9,
+  'm7': 10, 'M7': 11
+};
+
+const semitoneToInterval = {
+  0: 'Unison / Octave',
+  1: 'b9',
+  2: '9',
+  3: '#9 / m3',
+  4: 'M3',
+  5: 'P4 / 11',
+  6: 'tt / #11',
+  7: 'P5',
+  8: 'b13 / m6',
+  9: '13 / M6',
+  10: 'm7',
+  11: 'M7'
+};
+
+let correctAnswer = '';
+let currentChoices = [];
+
+function getRandomNoteName(semitone, useSharps = true) {
+  const names = enharmonicMap[semitone];
+  if (names.length === 1) return names[0];
+  return useSharps ? names[0] : names[1];
+}
+
+function generateQuestion() {
+  document.getElementById('feedback').textContent = '';
+  const mode = document.getElementById('mode').value;
+  const useSharpsForQuestion = Math.random() < 0.5;
+  const useSharpsForChoices = Math.random() < 0.5;
+  const intervalNames = Object.keys(intervalMap);
+  const semitoneToNote = i => getRandomNoteName(i, useSharpsForChoices);
+
+  let questionText = '';
+  let answer = '';
+  let options = [];
+
+  if (mode === '1') {
+    const root = Math.floor(Math.random() * 12);
+    const intervalName = intervalNames[Math.floor(Math.random() * intervalNames.length)];
+    const semitones = intervalMap[intervalName];
+    const targetNote = (root + semitones) % 12;
+
+    answer = getRandomNoteName(targetNote, useSharpsForChoices);
+    questionText = `Root: ${getRandomNoteName(root, useSharpsForQuestion)}, Interval: ${intervalName} → Select the Note`;
+
+    currentChoices = Array.from({ length: 12 }, (_, i) => semitoneToNote(i));
+  }
+
+  else if (mode === '2') {
+    const target = Math.floor(Math.random() * 12);
+    const intervalName = intervalNames[Math.floor(Math.random() * intervalNames.length)];
+    const semitones = intervalMap[intervalName];
+    const root = (target - semitones + 12) % 12;
+
+    answer = getRandomNoteName(root, useSharpsForChoices);
+    questionText = `Target Note: ${getRandomNoteName(target, useSharpsForQuestion)}, Interval: ${intervalName} → Select the Root`;
+
+    currentChoices = Array.from({ length: 12 }, (_, i) => semitoneToNote(i));
+  }
+
+  else if (mode === '3') {
+    const root = Math.floor(Math.random() * 12);
+    const note = Math.floor(Math.random() * 12);
+    const diff = (note - root + 12) % 12;
+
+    answer = semitoneToInterval[diff];
+    questionText = `Root: ${getRandomNoteName(root, useSharpsForQuestion)}, Note: ${getRandomNoteName(note, useSharpsForQuestion)} → Select the Interval`;
+
+    currentChoices = Array.from({ length: 12 }, (_, i) => semitoneToInterval[i]);
+  }
+
+  correctAnswer = answer;
+  document.getElementById('question').textContent = questionText;
+
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+
+  for (let choice of currentChoices) {
+    let btn = document.createElement('button');
+    btn.textContent = choice;
+    btn.onclick = () => checkAnswer(choice);
+    choicesDiv.appendChild(btn);
+  }
+}
+
+function checkAnswer(choice) {
+  const feedback = document.getElementById('feedback');
+  if (choice === correctAnswer || correctAnswer.includes(choice)) {
+    feedback.textContent = '✅ Correct!';
+    feedback.className = 'correct';
+    setTimeout(() => generateQuestion(), 800);
+  } else {
+    feedback.textContent = `❌ Wrong! Correct Answer: ${correctAnswer}`;
+    feedback.className = 'wrong';
+  }
+}
+
+// 初始加载和模式切换时自动出题
+document.getElementById('mode').addEventListener('change', generateQuestion);
+window.onload = generateQuestion;
+</script>
+
+</body>
+</html>
